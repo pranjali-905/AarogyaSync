@@ -1,0 +1,56 @@
+{
+  "short_name": "AarogyaSync",
+  "name": "AarogyaSync - Rural Healthcare Platform | आरोग्यसिंक",
+  "description": "Accessible, Offline-First Rural Healthcare PWA for Patients, ASHA Frontline Workers, and Doctors",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["medical", "health", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ASHA Doorstep Workflow",
+      "short_name": "ASHA Checkup",
+      "url": "/asha/workflow",
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Offline Sync Vault",
+      "short_name": "Sync Queue",
+      "url": "/asha/sync",
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Emergency 108 SOS",
+      "short_name": "Emergency",
+      "url": "/patient/emergency",
+      "icons": [{ "src": "/icon.svg", "sizes": "192x192" }]
+    }
+  ]
+}
