@@ -7,7 +7,8 @@ import {
   MOCK_MEDICINES 
 } from './mockData';
 
-const BASE_URL = (import.meta.env?.VITE_API_BASE_URL) || '/api/v1';
+const RAW_BASE_URL = (import.meta.env?.VITE_API_BASE_URL) || '/api/v1';
+const BASE_URL = RAW_BASE_URL.replace(/\/+$/, '');
 
 /**
  * Standard HTTP Request Wrapper
@@ -24,7 +25,8 @@ export async function apiRequest(endpoint, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout for cloud response & rural resilience
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const response = await fetch(`${BASE_URL}${cleanEndpoint}`, {
       ...options,
       headers,
       signal: controller.signal,
