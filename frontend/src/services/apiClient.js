@@ -8,7 +8,11 @@ import {
 } from './mockData';
 
 const RAW_BASE_URL = (import.meta.env?.VITE_API_BASE_URL) || '/api/v1';
-const BASE_URL = RAW_BASE_URL.replace(/\/+$/, '');
+let normalizedBase = RAW_BASE_URL.replace(/\/+$/, '');
+if (!normalizedBase.endsWith('/api/v1') && !normalizedBase.includes('/api/')) {
+  normalizedBase = `${normalizedBase}/api/v1`;
+}
+const BASE_URL = normalizedBase;
 
 /**
  * Standard HTTP Request Wrapper

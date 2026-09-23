@@ -24,12 +24,23 @@ const triageRoutes = require('./triageRoutes');
 const syncRoutes = require('./syncRoutes');
 
 // 1. Health Check
-router.get('/health', (req, res) => {
+router.get('/health', async (req, res) => {
+  let dbStatus = db.getIsConnected();
+  if (db.pool && dbStatus) {
+    try {
+      await db.pool.query('SELECT 1');
+    } catch (e) {
+      dbStatus = false;
+    }
+  }
+
   return success(res, {
     status: 'ONLINE',
     service: 'AarogyaSync Rural Healthcare Backend API',
-    databaseConnected: db.getIsConnected(),
+    databaseConnected: dbStatus,
+    database: dbStatus ? 'CONNECTED' : 'DISCONNECTED',
     environment: process.env.NODE_ENV || 'development',
+    mode: process.env.NODE_ENV || 'development',
     serverTime: new Date().toISOString()
   }, 'AarogyaSync API is operational');
 });
