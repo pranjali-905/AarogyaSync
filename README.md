@@ -233,20 +233,6 @@ npm --prefix backend run test
 
 ---
 
-## 🎯 How to Demonstrate to Hackathon Judges (Step-by-Step)
-
-| Step | Action on Screen | Technical Feature Demonstrated |
-| :---: | :--- | :--- |
-| **1** | Locate the **Persona Switcher** in the top navigation bar. Click **ASHA Worker** (`Sunita Tai`). | Zero-friction role switching without re-logging in during evaluation. |
-| **2** | Click **Start Health Check** -> select pregnant patient *Meena Waghmare*. Enter BP `145/95 mmHg`, SpO2 `98%`, and symptom *Severe Headache*. | **Algorithmic Clinical Triage**: Instantly flags RED Alert for suspected preeclampsia per NHM guidelines. |
-| **3** | Open browser Developer Tools (`F12`) -> **Network** tab -> toggle dropdown to **Offline**. | **PWA Offline Resilience**: Top status bar turns amber (`Offline`). Application continues running smoothly. |
-| **4** | In the top header, switch the language dropdown from `English` to **मराठी**. | **Tri-Lingual Localization**: All clinical UI, prompts, and forms instantly transform into authentic Devanagari script. |
-| **5** | Navigate to **फोटो प्रकरणे** (Photo Cases) -> click **नवीन फोटो जोडा** -> submit a case with title `त्वचेचा संसर्ग`. | **IndexedDB Vaulting**: Record is saved with a composite idempotency key in client storage; sync badge shows 1 queued item. |
-| **6** | In DevTools Network tab, toggle back to **No throttling** (Online). | **Auto-Sync Engine**: Background listener detects reconnect, issues batch POST, and updates status badge to *Synced*. |
-| **7** | Switch persona to **Doctor** (`Dr. Ramesh Kulkarni`) -> open **Doctor Queue** (`/doctor/queue`). | **Bidirectional Handoff**: The newly synced Marathi photo case and Meena's preeclampsia alert are visible in the doctor's prioritized queue. |
-| **8** | Switch persona to **Admin** -> open **Reports** -> click **Export CSV**. | **Public Health Surveillance**: Downloads genuine epidemiological surveillance datasets for district audits. |
-
----
 
 ## 📂 Repository Codebase Structure
 
