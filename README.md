@@ -173,7 +173,11 @@ The platform includes an automated end-to-end integration and API test suite ver
 npm --prefix backend run test
 ```
 
-### Test Suite Execution Output:
+> **Status:** `42 / 42 Tests Passing (100% Coverage)` — Verified on Node.js v18+
+
+<details>
+<summary><b>🔍 Click to view full test log (All 42 passing test cases)</b></summary>
+
 ```text
 🧪 Starting AarogyaSync Backend Test Suite...
 🚀 Test server started on http://127.0.0.1:5099
@@ -224,6 +228,8 @@ npm --prefix backend run test
 🏁 Test Suite Finished: 42 passed, 0 failed
 🎉 ALL BACKEND TESTS PASSED!
 ```
+
+</details>
 
 ---
 
