@@ -48,6 +48,7 @@ async function runMigration() {
   } catch (err) {
     console.error('💥 Migration failed:', err.message);
     process.exitCode = 1;
+    throw err; // re-throw so callers (e.g. server.js) can handle failure
   } finally {
     if (client) client.release();
     await pool.end();
