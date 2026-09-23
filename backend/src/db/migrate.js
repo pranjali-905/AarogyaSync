@@ -9,8 +9,15 @@ async function runMigration() {
   console.log('🚀 AarogyaSync Database Migration Initiated');
   console.log(`📡 Connecting to PostgreSQL: ${env.DATABASE_URL.replace(/:[^:@]+@/, ':****@')}`);
 
+  const isRemoteDb = env.DATABASE_URL.includes('.render.com') ||
+                     env.DATABASE_URL.includes('.supabase.co') ||
+                     env.DATABASE_URL.includes('.neon.tech') ||
+                     env.DATABASE_URL.includes('sslmode=require') ||
+                     env.IS_PRODUCTION;
+
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
+    ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
     connectionTimeoutMillis: 5000
   });
 

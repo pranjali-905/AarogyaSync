@@ -9,9 +9,34 @@ const AppError = require('./utils/appError');
 
 const app = express();
 
-// Middleware
+// Production-ready CORS supporting Vercel, local development, and custom CORS_ORIGIN
+const configuredOrigins = (env.CORS_ORIGIN || '*')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: env.CORS_ORIGIN || '*',
+  origin: (origin, callback) => {
+    // Allow server-to-server, mobile app, and non-browser requests without origin header
+    if (!origin) return callback(null, true);
+
+    // If wildcard configured or exact origin match
+    if (configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Automatically allow Vercel production and preview deployment URLs
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Allow local development environments
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id']
 }));

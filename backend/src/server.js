@@ -5,10 +5,10 @@ const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`=================================================`);
   console.log(`🚀 AarogyaSync API Server running on port ${PORT}`);
-  console.log(`📡 Health endpoint: http://localhost:${PORT}/api/v1/health`);
+  console.log(`📡 Health endpoint: /api/v1/health`);
   console.log(`🏥 Mode: ${process.env.NODE_ENV || 'development'}`);
   console.log(`=================================================`);
 });

@@ -22,7 +22,7 @@ export async function apiRequest(endpoint, options = {}) {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout for rural resilience
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout for cloud response & rural resilience
 
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,

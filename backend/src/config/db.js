@@ -5,9 +5,16 @@ let pool = null;
 let isConnected = false;
 
 if (env.DATABASE_URL && env.DATABASE_URL.trim().length > 0) {
+  const isRemoteDb = env.DATABASE_URL.includes('.render.com') ||
+                     env.DATABASE_URL.includes('.supabase.co') ||
+                     env.DATABASE_URL.includes('.neon.tech') ||
+                     env.DATABASE_URL.includes('sslmode=require') ||
+                     env.IS_PRODUCTION;
+
   pool = new Pool({
     connectionString: env.DATABASE_URL,
-    connectionTimeoutMillis: 3000,
+    ssl: isRemoteDb ? { rejectUnauthorized: false } : undefined,
+    connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 10000,
     max: 20
   });
