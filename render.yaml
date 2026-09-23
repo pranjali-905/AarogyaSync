@@ -1,0 +1,33 @@
+databases:
+  - name: aarogyasync-db
+    databaseName: aarogyasync_db
+    user: aarogyasync
+    region: singapore
+    plan: free
+
+services:
+  - type: web
+    name: aarogyasync-backend
+    runtime: node
+    region: singapore
+    plan: free
+    repo: https://github.com/pranjali-905/AarogyaSync
+    branch: main
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aarogyasync-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        value: "*"
