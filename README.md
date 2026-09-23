@@ -24,169 +24,98 @@ In India's remote rural hamlets and tribal belts, primary health delivery faces 
 
 ---
 
-## 🏛️ Comprehensive System Architecture
+## 🏛️ System Architecture
+
+AarogyaSync is built on an **offline-first, 3-tier resilient architecture**:
 
 ```mermaid
-flowchart TD
-    subgraph ClientLayer["Frontend Client Layer (Progressive Web App)"]
-        UI["Tailwind CSS + Lucide React UI\n(Responsive Mobile & Desktop)"]
-        Persona["Role Router & Persona Switcher\n(Patient | ASHA | Doctor | Admin)"]
-        i18n["Tri-Lingual Localization Engine\n(English | हिंदी | मराठी)"]
-        SW["Service Worker (sw.js)\nCache-First Static Shell & Fallbacks"]
-        IDB[("Client IndexedDB Storage\n- Offline Records Queue\n- Local Patient Registry\n- Cached Medicine Stock")]
-        SyncEngine["Client Sync Manager\n- Online/Offline Auto-Detect\n- Idempotency Key Generator\n- Retry & Backoff Controller"]
-    end
-
-    subgraph TransportLayer["Network & Transport Layer"]
-        HTTP["Secure RESTful JSON API\n/api/v1/*"]
-        Proxy["Vite Dev / Reverse Proxy Gateway"]
-    end
-
-    subgraph ServerLayer["Backend API Server (Node.js & Express)"]
-        AuthMiddleware["JWT Authentication & RBAC Guards"]
-        TriageEngine["Clinical Algorithmic Triage Engine\n(NHM / ICMR Protocols)"]
-        SyncController["Idempotent Batch Sync Processor\n(Conflict-Free Ingestion)"]
-        ServiceModules["Core Domain Services\n- Patient & Maternal Service\n- ASHA Workflow Service\n- Doctor Teleconsult Service\n- PHC Inventory Service\n- Surveillance Analytics"]
-    end
-
-    subgraph DataLayer["Relational Data Tier (PostgreSQL)"]
-        PG[("PostgreSQL 16 Database\n- users & role profiles\n- patient_health_records\n- photo_cases & consultations\n- sync_queue (UNIQUE keys)\n- phc_facilities & medicine_inventory")]
-    end
-
-    UI --> Persona
-    UI --> i18n
-    Persona --> SW
-    SW --> IDB
-    IDB <--> SyncEngine
-    SyncEngine <--> Proxy
-    Proxy <--> HTTP
-    HTTP --> AuthMiddleware
-    AuthMiddleware --> ServiceModules
-    ServiceModules --> TriageEngine
-    ServiceModules --> SyncController
-    ServiceModules <--> PG
-    SyncController <--> PG
+flowchart LR
+    A["📱 Frontend PWA<br/>• React 18 + Vite<br/>• IndexedDB (Offline Store)<br/>• Tri-Lingual (EN / HI / MR)"] 
+    -->|Auto-Sync & REST API| B["⚡ Backend API Gateway<br/>• Node.js + Express<br/>• JWT Auth & Role Guards<br/>• NHM Clinical Triage Engine"]
+    -->|PostgreSQL / Memory Fallback| C[("🗄️ Database<br/>• PostgreSQL 16<br/>• Patient Records & Vitals<br/>• Idempotent Sync Queue")]
 ```
+
+| Layer | Technologies | Key Responsibilities |
+| :--- | :--- | :--- |
+| **Client Tier** | React 18, Vite, Tailwind CSS, Service Workers, IndexedDB | 100% offline functionality, tri-lingual localization, offline data vaulting. |
+| **API Tier** | Node.js, Express REST API, JWT Authentication, RBAC | Clinical triage algorithm execution, conflict-free sync ingestion, business logic. |
+| **Data Tier** | PostgreSQL 16 (with automated zero-config in-memory fallback) | Relational persistence of patient records, teleconsultations, and PHC inventory. |
 
 ---
 
-## 🔄 Core Flowchart 1: Offline-First Zero-Loss Sync Engine
+## 🔄 Core Workflow 1: Offline-First Sync Engine
 
-AarogyaSync guarantees that frontline health workers can register doorstep health assessments, log pregnant mothers' vitals, and capture clinical condition photographs in remote areas with zero cell reception.
+Frontline ASHA workers can capture clinical checkups and photo cases in remote tribal villages with **zero cell reception**:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor ASHA as ASHA Worker (Offline Field)
-    participant Client as PWA / IndexedDB
-    participant Listener as Network State Listener
-    participant Server as Express Sync Engine
-    participant DB as PostgreSQL Database
-    actor Doctor as PHC Medical Officer
+    actor ASHA as ASHA Worker (Field)
+    participant App as AarogyaSync PWA
+    participant Server as Cloud Backend
+    actor Doctor as PHC Doctor
 
-    ASHA->>Client: Capture Vitals & Symptoms (SpO2, BP, Photo Case)
-    Note over Client: Internet status = OFFLINE
-    Client->>Client: Generate composite idempotency key<br/>(sync_type_timestamp_entropy)
-    Client->>Client: Vault record safely into IndexedDB queue
-    Client-->>ASHA: Visual Badge: "1 Record Queued Locally (Offline)"
-
-    Note over ASHA,Listener: ASHA moves to village center with 2G/3G signal
-    Listener->>Client: window.online event fired
-    Client->>Client: Update status badge: "Syncing..."
-    Client->>Server: POST /api/v1/sync/batch [Array of Queued Payloads]
-
-    Server->>DB: INSERT INTO sync_queue (idempotency_key, payload)<br/>ON CONFLICT (idempotency_key) DO NOTHING;
-    Server->>DB: Dispatch record to clinical tables (patient_records, photo_cases)
-    DB-->>Server: Transaction Committed
-    Server-->>Client: HTTP 200 OK (Processed Count, Confirmed Keys)
-
-    Client->>Client: Mark local records as Synced & flush queue
-    Client-->>ASHA: Visual Badge: "All Records Synced"
-    Server->>Doctor: Case instantly visible in Doctor Clinical Inbox
+    ASHA->>App: 1. Record vitals offline (Zero Internet)
+    Note over App: Safely stored in local IndexedDB queue
+    App->>Server: 2. Auto-sync batch when 2G/3G connects
+    Note over Server: Deduplicates & saves records
+    Server->>Doctor: 3. Instant alert in Doctor's inbox
 ```
+
+1. **Offline Capture:** Health records and photo cases are stored locally in the browser's IndexedDB with a unique idempotency key.
+2. **Auto-Detection:** When the mobile device reconnects to a network (2G/3G/4G/Wi-Fi), a background listener automatically batches queued records to the backend.
+3. **Conflict-Free Ingestion:** The backend deduplicates records using idempotency keys, updating both the database and the doctor's queue.
 
 ---
 
-## 🩺 Core Flowchart 2: National Health Mission (NHM) Clinical Triage Engine
+## 🩺 Core Workflow 2: Clinical Triage Protocol (NHM Guidelines)
 
-Every vitals entry is evaluated client-side and server-side against national rural health protocols to detect maternal complications, pediatric emergencies, and severe sepsis before irreversible deterioration occurs.
-
-```mermaid
-flowchart TD
-    Start(["Patient / ASHA Enters Measured Vitals & Symptoms"]) --> InputCheck{"Input Parameters"}
-
-    InputCheck --> MaternalCheck{"Is Female Patient Pregnant?"}
-    MaternalCheck -- Yes --> PregBP{"Systolic >= 140 OR<br/>Diastolic >= 90 mmHg?"}
-    PregBP -- Yes --> RedPre{"RED ALERT:<br/>Suspected Preeclampsia / Eclampsia"}
-    PregBP -- No --> GeneralVitals
-
-    MaternalCheck -- No --> GeneralVitals["Evaluate General Clinical Vitals"]
-
-    GeneralVitals --> Oxygen{"Pulse Oximetry (SpO2)"}
-    Oxygen -- "< 92%" --> RedO2{"RED ALERT:<br/>Severe Hypoxemia / Respiratory Distress"}
-    Oxygen -- "92% - 94%" --> YelO2{"YELLOW ALERT:<br/>Borderline Respiratory Compromise"}
-    Oxygen -- "> 94%" --> BPCheck
-
-    GeneralVitals --> BPCheck{"Blood Pressure Check"}
-    BPCheck -- "Systolic >= 160 OR<br/>Diastolic >= 100" --> RedBP{"RED ALERT:<br/>Hypertensive Urgency / Crisis"}
-    BPCheck -- "Systolic >= 140 OR<br/>Diastolic >= 90" --> YelBP{"YELLOW ALERT:<br/>Stage 1 Hypertension"}
-    BPCheck -- Normal --> TempCheck
-
-    GeneralVitals --> TempCheck{"Body Temperature"}
-    TempCheck -- ">= 103°F (39.4°C)" --> RedFever{"RED ALERT:<br/>High-Grade Febrile Emergency"}
-    TempCheck -- ">= 100.4°F (38.0°C)" --> YelFever{"YELLOW ALERT:<br/>Moderate Pyrexia"}
-    TempCheck -- Normal --> PulseCheck
-
-    GeneralVitals --> PulseCheck{"Pulse Rate"}
-    PulseCheck -- "> 130 OR < 45 bpm" --> RedPulse{"RED ALERT:<br/>Severe Tachycardia / Bradycardia"}
-    PulseCheck -- "> 110 OR < 55 bpm" --> YelPulse{"YELLOW ALERT:<br/>Abnormal Heart Rate"}
-    PulseCheck -- Normal --> SymptomCheck
-
-    GeneralVitals --> SymptomCheck{"Check 14 Critical Red-Flag Symptoms<br/>(Chest Pain, Convulsions, Vaginal Bleeding, Stridor)"}
-    SymptomCheck -- Present --> RedFlag{"RED ALERT:<br/>Acute Life-Threatening Presentation"}
-    SymptomCheck -- Absent --> GreenCheck
-
-    RedPre & RedO2 & RedBP & RedFever & RedPulse & RedFlag --> FinalRed["🔴 RED PRIORITY<br/>Action: Immediate 108 Emergency Transport & CHC Referral"]
-    YelO2 & YelBP & YelFever & YelPulse --> FinalYellow["🟡 YELLOW PRIORITY<br/>Action: Schedule PHC Doctor Teleconsult within 24 Hours"]
-    GreenCheck["All parameters within normal clinical limits"] --> FinalGreen["🟢 GREEN PRIORITY<br/>Action: Routine ASHA Follow-up & Home Care Instructions"]
-```
-
----
-
-## 👥 Core Flowchart 3: Collaborative Multi-Persona Workflow
+Every patient record is evaluated client-side and server-side to detect high-risk maternal signs, respiratory compromise, and vital emergencies:
 
 ```mermaid
 flowchart LR
-    subgraph Villager["1. Villager / Patient"]
-        P1["Register with ABHA ID\n(Gender-Adaptive Path)"]
-        P2["Access Digital Backpack\n(Prescriptions, Lab Tests)"]
-        P3["Check PHC Medicine Stocks\n& Schedule Consultations"]
-    end
-
-    subgraph ASHA["2. Frontline ASHA Worker"]
-        A1["Doorstep Health Checkups\n(100% Offline Capability)"]
-        A2["Capture Tele-Dermatology\nPhoto Cases in Marathi/Hindi"]
-        A3["Queue Records in IndexedDB\n& Auto-Sync on Network Return"]
-    end
-
-    subgraph Doctor["3. PHC Medical Officer"]
-        D1["Review Urgency-Sorted\nTriage Queue (Red/Yellow/Green)"]
-        D2["Diagnose Async Photo Cases\n& Live Teleconsultations"]
-        D3["Issue ABDM e-Prescriptions\nLinked to PHC Stock"]
-    end
-
-    subgraph Admin["4. Public Health Officer"]
-        AD1["Surveillance Heatmaps &\nSyndromic Outbreak Alerts"]
-        AD2["Monitor PHC Drug Inventory\n& Stockout Thresholds"]
-        AD3["Export Epidemiological\nAudits in CSV / JSON"]
-    end
-
-    Villager -->|Reports Symptoms| ASHA
-    ASHA -->|Syncs Triage Cases & Photos| Doctor
-    Doctor -->|Sends e-Rx & Follow-up Plans| Villager
-    Doctor & ASHA -->|Aggregated Data| Admin
-    Admin -->|Dispatches Medicine Stocks & Staff| Doctor
+    A["🩺 Step 1: Input Vitals<br/>(BP, SpO2, Temp, Pulse, Symptoms)"]
+    --> B{"Clinical Check"}
+    B -->|Critical Red Flags / SpO2 < 92%| R["🔴 RED Priority<br/>Immediate 108 Emergency Transport"]
+    B -->|Borderline Vitals / SpO2 92-94%| Y["🟡 YELLOW Priority<br/>Doctor Teleconsult within 24h"]
+    B -->|Normal Limits| G["🟢 GREEN Priority<br/>Routine Home Care & Follow-up"]
 ```
+
+### Triage Decision Matrix
+
+| Urgency Category | Clinical Triggers | Immediate Action |
+| :---: | :--- | :--- |
+| 🔴 **RED PRIORITY**<br>*(Emergency)* | • Oxygen (SpO2) **< 92%**<br>• Blood Pressure **≥ 160/100 mmHg** (or **≥ 140/90** if pregnant)<br>• Temperature **≥ 103°F (39.4°C)**<br>• Pulse **> 130** or **< 45 bpm**<br>• Red-flag symptoms: Chest pain, convulsions, vaginal bleeding | Immediate 108 ambulance dispatch and emergency CHC hospital referral |
+| 🟡 **YELLOW PRIORITY**<br>*(Urgent Care)* | • Oxygen (SpO2) **92% – 94%**<br>• Blood Pressure **140–159 / 90–99 mmHg**<br>• Temperature **100.4°F – 102.9°F**<br>• Pulse **110–130** or **45–54 bpm** | Scheduled PHC Medical Officer teleconsultation within 24 hours |
+| 🟢 **GREEN PRIORITY**<br>*(Routine)* | • All vitals within normal clinical limits<br>• No acute distress symptoms | Routine ASHA home care instructions and regular follow-up |
+
+---
+
+## 👥 Core Workflow 3: Multi-Persona Collaboration
+
+AarogyaSync connects all rural primary healthcare stakeholders in a single seamless loop:
+
+```mermaid
+flowchart LR
+    P["👤 1. Villager / Patient<br/>• Check symptoms<br/>• Digital Backpack<br/>• View PHC stocks"] 
+    --> A["👩‍⚕️ 2. ASHA Worker<br/>• Offline doorstep checks<br/>• Capture photo cases<br/>• Sync when online"]
+    --> D["👨‍⚕️ 3. PHC Doctor<br/>• Urgent triage queue<br/>• Video & async diagnosis<br/>• ABDM e-Prescriptions"]
+    --> AD["🏛️ 4. Health Admin<br/>• Disease surveillance<br/>• Outbreak heatmaps<br/>• PHC drug replenishment"]
+```
+
+---
+
+## 💾 Relational Data Model
+
+The platform organizes data across five primary relational domains:
+
+| Table / Entity | Purpose | Key Fields |
+| :--- | :--- | :--- |
+| `users` & Profiles | Authentication, role authorization, and ABHA IDs | `id`, `phone`, `role` (`PATIENT`, `ASHA`, `DOCTOR`, `ADMIN`), `village` |
+| `patient_health_records` | Clinical vitals, ANC maternal logs, immunization history | `patient_id`, `vitals` (`bp`, `spo2`, `temp`), `triage_priority`, `notes` |
+| `photo_cases` | Store-and-forward tele-dermatology and trauma cases | `patient_id`, `asha_id`, `photo_url`, `urgency`, `doctor_notes` |
+| `sync_queue` | Zero-loss offline queue with duplicate prevention | `idempotency_key` (UNIQUE), `sync_type`, `payload`, `status` |
+| `medicine_inventory` | Real-time PHC pharmacy stock levels and alerts | `facility_id`, `medicine_name`, `current_stock`, `min_reorder_level` |
 
 ---
 
@@ -204,61 +133,6 @@ flowchart LR
 
 ---
 
-## 💾 Relational Database Schema Model
-
-```mermaid
-erDiagram
-    USERS ||--o| PATIENT_PROFILES : "has"
-    USERS ||--o| ASHA_PROFILES : "has"
-    USERS ||--o| DOCTOR_PROFILES : "has"
-    USERS ||--o{ HEALTH_RECORDS : "owns"
-    USERS ||--o{ APPOINTMENTS : "books"
-    USERS ||--o{ CONSULTATIONS : "participates"
-    USERS ||--o{ NOTIFICATIONS : "receives"
-
-    FACILITIES ||--o{ MEDICINE_AVAILABILITY : "stocks"
-    FACILITIES ||--o{ DIAGNOSTIC_AVAILABILITY : "provides"
-    FACILITIES ||--o{ DOCTOR_PROFILES : "assigns"
-
-    MEDICINES ||--o{ MEDICINE_AVAILABILITY : "inventoried_in"
-    DIAGNOSTIC_TESTS ||--o{ DIAGNOSTIC_AVAILABILITY : "tested_in"
-
-    PATIENT_PROFILES ||--o{ CHILD_RECORDS : "mothers"
-    PATIENT_PROFILES ||--o{ PHOTO_CASES : "subject_of"
-    PATIENT_PROFILES ||--o{ REFERRALS : "referred_via"
-    PATIENT_PROFILES ||--o{ FOLLOW_UPS : "monitored_by"
-
-    SYNC_QUEUE {
-        string id PK
-        string idempotency_key UK
-        string sync_type
-        jsonb payload
-        string status
-        timestamp created_at
-    }
-
-    PHOTO_CASES {
-        string id PK
-        string patient_id FK
-        string asha_id FK
-        string doctor_id FK
-        string title
-        text description
-        string urgency
-        string status
-        text photo_url
-        text doctor_notes
-    }
-
-    MEDICINE_AVAILABILITY {
-        string facility_id FK
-        string medicine_id FK
-        int current_stock
-        string unit
-        boolean is_available
-        int min_reorder_level
-    }
-```
 
 ---
 
